@@ -1,0 +1,924 @@
+eric-cm-mediator:
+  backend:
+    dbuser: pg-custom-user
+    hostname: eric-data-document-database-pg-cm
+  cmkey:
+    enable: true
+  cmm:
+    kafkaProducerConfig: '{"max_request_size": 6291456}'
+  dbbr:
+    backupType: DEFAULT
+  enabled: true
+  kafka:
+    hostname: eric-data-message-bus-kf-client
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  resources:
+    eric-cm-mediator:
+      limits:
+        memory: 1Gi
+  service:
+    endpoints:
+      restapi:
+        tls:
+          enforced: optional
+          verifyClientCertificate: optional
+  tolerations:
+    eric-cm-mediator-notifier:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 60
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 0
+eric-cm-yang-provider:
+  cliExtensionCmds:
+    showAlarms:
+      enabled: true
+    showAlarmsHistory:
+      enabled: true
+  enabled: true
+  externaldb:
+    dbuser: pg-custom-user
+    host: eric-data-document-database-pg-cm
+    password: ""
+    user: ""
+  isCandidateEnabled: true
+  objectStorage:
+    enableImportExportCommands: true
+    secretName: eric-pc-gateway-obj-storage-secret
+  persistentVolumeClaim:
+    sshKeyPvc:
+      size: 10Mi
+  resources:
+    pmMetrics:
+      limits:
+        memory: 1Gi
+      requests:
+        memory: 250Mi
+    sshd:
+      limits:
+        memory: 350Mi
+    yangDbAdapter:
+      limits:
+        memory: 512Mi
+      requests:
+        memory: 250Mi
+  rollback:
+    enableRollbackCommands: true
+    numberOfRollbacksToStore: 50
+  service:
+    annotations:
+      addressPoolName: pcg-oam
+      sharedVIPLabel: pcg-oam
+    loadBalancerIP: 172.21.90.228
+eric-cnom-document-database-mg:
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  resources:
+    requests:
+      cpu: 50m
+      memory: 320Mi
+eric-cnom-server:
+  authentication:
+    ldap:
+      enabled: true
+    local:
+      enabled: false
+  dashboards:
+    configMaps:
+    - eric-pc-gateway-cnom-server-dashboards
+  enabled: true
+  features:
+    healthCheckViewer: true
+    metricViewer: true
+  legalNotice: |
+    IF YOU ARE NOT AN AUTHORIZED USER, PLEASE EXIT IMMEDIATELY
+
+    This system processes sensitive personal data. The misuse of such data may generate considerable harm to the data subjects. Be reminded of the confidentiality obligations you have when accessing this kind of data and the disciplinary consequences of improper handling.
+
+    Version: 1.1, Last Updated: 2020-11-10
+  metrics:
+    hierarchy:
+      configMap: eric-pc-gateway-cnom-server-metric-hierarchy
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  service:
+    annotations:
+      sharedVIPLabel: pcg-oam
+    endpoints:
+      api:
+        tls:
+          disableSipTls: true
+          verifyClientCertificate: optional
+    loadBalancerIP: 172.21.90.229
+    type: LoadBalancer
+eric-ctrl-bro:
+  bro:
+    enableAgentDiscovery: true
+    enableConfigurationManagement: true
+  enabled: true
+  kafka:
+    hostname: eric-data-message-bus-kf
+  persistence:
+    persistentVolumeClaim:
+      size: 5Gi
+  probes:
+    backupAndRestore:
+      livenessProbe:
+        initialDelaySeconds: 240
+      readinessProbe:
+        initialDelaySeconds: 30
+  resources:
+    backupAndRestore:
+      requests:
+        cpu: 200m
+        memory: 1Gi
+eric-data-coordinator-zk:
+  enabled: true
+  persistence:
+    persistentVolumeClaim:
+      storageClassName: ocs-storagecluster-ceph-rbd
+  probes:
+    datacoordinatorzk:
+      livenessProbe:
+        initialDelaySeconds: 240
+  resources:
+    datacoordinatorzk:
+      requests:
+        cpu: 300m
+        memory: 1Gi
+eric-data-distributed-coordinator-ed:
+  brAgent:
+    backupTypeList:
+    - DEFAULT
+    brLabelValue: ddced-agent
+    enabled: true
+    properties:
+      applicationProperties: |-
+        dced.agent.restore.type=overwrite
+        dced.excluded.paths=/shelter,/kms/core/lock
+        dced.included.paths=
+  enabled: true
+  persistence:
+    persistentVolumeClaim:
+      size: 512Mi
+      storageClassName: ocs-storagecluster-ceph-rbd
+  service:
+    endpoints:
+      dced:
+        acls:
+          adminSecret: eric-pc-gateway-data-distributed-coordinator-ed-secret
+        metrics:
+          enabled: false
+  tolerations:
+    brAgent:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 60
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 0
+eric-data-document-database-pg-ah:
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  postgresConfig:
+    huge_pages: "off"
+  postgresDatabase: adp_gs_ah
+  resources:
+    postgres:
+      requests:
+        cpu: 250m
+eric-data-document-database-pg-cm:
+  brAgent:
+    backupDataModelConfig: eric-cm-mediator-br-agent
+    backupTypeList:
+    - DEFAULT
+    enabled: true
+    logicalDBBackupEnable: true
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  postgresConfig:
+    huge_pages: "off"
+    max_connections: 200
+  postgresDatabase: adp_gs_cm
+  resources:
+    postgres:
+      requests:
+        cpu: 250m
+  tolerations:
+    brAgent:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 60
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 0
+eric-data-document-database-pg-lm:
+  enabled: true
+  postgresConfig:
+    huge_pages: "off"
+  postgresDatabase: adp_gs_lm
+  resources:
+    postgres:
+      requests:
+        cpu: 250m
+eric-data-message-bus-kf:
+  enabled: true
+  jmx:
+    enabled: false
+  livenessProbeTcpSocketCheck: true
+  persistence:
+    persistentVolumeClaim:
+      enabled: false
+      storageClassName: ocs-storagecluster-ceph-rbd
+  service:
+    endpoints:
+      messagebuskf:
+        tls:
+          enforced: optional
+eric-data-object-storage-mn:
+  affinity:
+    podAntiAffinity: soft
+  credentials:
+    kubernetesSecretName: eric-pc-gateway-obj-storage-secret
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  objects_lifecycle_cfg: |
+    #!/bin/bash
+    mc mb $MC_HOST/coredump
+    eosc set life-cycle-rule bucket coredump expire 7 --lfstatus=Enabled
+    mc mb $MC_HOST/heuristics
+    mc mb $MC_HOST/itc
+    eosc set life-cycle-rule bucket itc expire 1 --lfstatus=Enabled
+  persistentVolumeClaim:
+    size: 10Gi
+  server:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 8Gi
+      requests:
+        cpu: 250m
+        memory: 2Gi
+eric-data-search-engine:
+  autoSetRequiredWorkerNodeSysctl: true
+  enabled: true
+  livenessProbe:
+    tlsproxy:
+      timeoutSeconds: 15
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  persistence:
+    data:
+      persistentVolumeClaim:
+        size: 50Gi
+  replicaCount:
+    ingest: 2
+  resources:
+    data:
+      limits:
+        cpu: 750m
+        memory: 3Gi
+    ingest:
+      limits:
+        cpu: 750m
+    master:
+      limits:
+        cpu: 750m
+eric-data-search-engine-curator:
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  resources:
+    curator:
+      requests:
+        cpu: 90m
+        memory: 90Mi
+eric-data-sftp-server:
+  configuration:
+    bucket_policy: |-
+      system-troubleshooter coredump r: up-troubleshooter coredump r:
+      up-admin heuristics rw: up-operator heuristics rw: up-troubleshooter heuristics r:
+      system-trace-admin itc rw: system-troubleshooter itc r: up-trace-admin itc r: up-troubleshooter itc r:
+      system-trace-admin eric-pmbr-rop-file-store rw:
+      system-trace-admin uetrace r: system-troubleshooter uetrace r: up-trace-admin uetrace r: up-troubleshooter uetrace r
+    default_bucket_policy: 'system-admin * rw: system-security-admin * rw: system-read-only
+      * r: * * none'
+    object_policy: ""
+  enabled: true
+  objectStorage:
+    accessSecretName: eric-pc-gateway-obj-storage-secret
+  privacy_notice_file: |
+    IF YOU ARE NOT AN AUTHORIZED USER, PLEASE EXIT IMMEDIATELY
+
+    This system processes sensitive personal data. The misuse of such data may
+    generate considerable harm to the data subjects. Be reminded of the
+    confidentiality obligations you have when accessing this kind of data and
+    the disciplinary consequences of improper handling.
+
+    Version: 1.1, Last Updated: 2020-11-10
+  service:
+    annotations:
+      sharedVIPLabel: pcg-oam
+    loadBalancerIP: 172.21.90.228
+eric-fh-alarm-handler:
+  alarmhandler:
+    configmap:
+      faultmappings: eric-pc-gateway-alarm-handler-faultmappings
+  backend:
+    hostname: eric-data-document-database-pg-ah
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+eric-fh-snmp-alarm-provider:
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  service:
+    annotations:
+      sharedVIPLabel: pcg-oam
+    loadBalancerIP: 172.21.90.228
+    secretName: eric-pc-gateway-snmp-alarm-provider-config
+    type: LoadBalancer
+  tolerations:
+    snmpAP:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 60
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 0
+eric-lm-combined-server:
+  database:
+    host: eric-data-document-database-pg-lm
+    name: adp_gs_lm
+    userName: pg-custom-user
+  enabled: true
+  licenseServerClient:
+    licenseServer:
+      thrift:
+        host: 172.21.223.124
+        port: 9095
+  tolerations:
+    licenseServerClient:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 60
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 0
+eric-log-shipper:
+  enabled: true
+  logLevel: warning
+  logshipper:
+    cfgDataInputType: container
+    privileged: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  resources:
+    logshipper:
+      limits:
+        cpu: 500m
+        memory: 1000Mi
+      requests:
+        cpu: 100m
+        memory: 100Mi
+eric-log-transformer:
+  config:
+    filter: |
+      if "CFR" == "[metadata][category]" {
+        drop {}
+      }
+  egress:
+    syslog:
+      enabled: true
+      inclusions:
+      - field: '[logplane]'
+        value: adp-app-asi-logs
+      - field: '[logplane]'
+        value: adp-app-audit-logs
+      - field: '[logplane]'
+        value: adp-app-logs
+      - field: '[logplane]'
+        value: adp-app-security-logs
+      - field: '[logplane]'
+        value: isp-logs
+      - field: '[logplane]'
+        value: adp-app-debug-logs
+      - field: '[facility]'
+        value: log audit
+      - field: '[facility]'
+        value: local3
+      - field: '[facility]'
+        value: log subscriber
+      - field: '[metadata][category]'
+        value: CFR
+      remoteHosts:
+      - host: 172.18.198.84
+        port: 514
+      - host: 172.25.143.84
+        port: 514
+      tls:
+        enabled: false
+  replicaCount: 2
+  resources:
+    logtransformer:
+      limits:
+        cpu: 2000m
+        memory: 8Gi
+      requests:
+        cpu: 250m
+        memory: 2Gi
+    metrics:
+      limits:
+        cpu: 100m
+        memory: 512Mi
+      requests:
+        cpu: 25m
+        memory: 64Mi
+    tlsproxy:
+      limits:
+        cpu: 100m
+        memory: 256Mi
+      requests:
+        cpu: 25m
+        memory: 64Mi
+eric-odca-diagnostic-data-collector:
+  enabled: true
+  env:
+    collectDelayMinutes: 5
+    enableCmConfig: true
+    enableCmypConfig: true
+    enableFileCollector: true
+    enableFixedFiles: true
+    enableKubernetesInfoCollector: true
+    enableSwICollector: true
+    fileCollectorLocations:
+    - coredump/core
+    - eric-pmbr-rop-file-store
+    - a10net
+    fixedFileCollectorLocations:
+    - eric-cm-yang-provider-bucket/ericsson.xml
+    interval: 15
+    logIndices:
+    - adp-app-asi-logs*
+    - adp-app-audit-logs*
+    - adp-app-logs*
+    - adp-app-debug-logs*
+    - adp-app-security-logs*
+    - isp-logs*
+    sftphost: 172.21.115.206:22
+    window: 15
+  kms:
+    enabled: true
+  kubernetesInfo:
+    enabled: true
+  objectStorage:
+    enabled: true
+    secretName: eric-pc-gateway-obj-storage-secret
+  resources:
+    diagnostic-data-collector:
+      limits:
+        cpu: 2000m
+        ephemeral-storage: 30Gi
+        memory: 1Gi
+      requests:
+        cpu: 1600m
+        ephemeral-storage: 24Gi
+        memory: 800Mi
+    diagnostic-data-collector-manual:
+      limits:
+        cpu: 1000m
+        ephemeral-storage: 20Gi
+        memory: 1Gi
+      requests:
+        cpu: 200m
+        ephemeral-storage: 8Gi
+        memory: 300Mi
+  sftpCredentials:
+    enabled: true
+    password: testuser
+    secretName: eric-pc-gateway-ddc-sftp-secret
+    username: testuser
+  swim:
+    enabled: true
+eric-pc-firewall-coordinator-at:
+  enabled: true
+eric-pc-kvdb-rd-operator:
+  enabled: true
+  notready:
+    tolerationSeconds: 60
+  resources:
+    logcar:
+      requests:
+        cpu: 1m
+        memory: 20Mi
+    operator:
+      requests:
+        cpu: 250m
+        memory: 64Mi
+eric-pc-kvdb-rd-server:
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  resources:
+    metricExporter:
+      limits:
+        cpu: 100m
+        memory: 200Mi
+      requests:
+        cpu: 50m
+        memory: 100Mi
+    node:
+      limits:
+        cpu: 1000m
+        memory: 3Gi
+      requests:
+        cpu: 250m
+        memory: 1Gi
+  server:
+    maxMemory: 5120mb
+eric-pc-networking-cm-agent:
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+eric-pc-routing-aggregator:
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  objectStorage:
+    accessSecretName: eric-pc-gateway-obj-storage-secret
+    enabled: true
+eric-pc-routing-engine:
+  creio:
+    master: bond2
+  enabled: true
+  interfaces:
+    macvlan:
+    - master: bond2
+    - master: bond2
+    - master: bond2
+    - master: bond2
+    - master: bond2
+    - master: bond2
+    - master: bond2
+    - master: bond2
+  logLevel: debug
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+eric-pc-routing-engine-api:
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  objectStorage:
+    accessSecretName: eric-pc-gateway-obj-storage-secret
+    enabled: true
+eric-pc-up-br-agent:
+  enabled: true
+eric-pc-up-data-plane:
+  acceleratedIo:
+    enabled: true
+  allowNetworkConfigChanges: true
+  applications:
+  - name: app100
+  at:
+    env:
+      poll: false
+      shellEnabled: true
+      sshEnabled: true
+    license:
+      customer: 302-760-00002
+      licenseContent: eyJhbGciOiJSUzI1NiJ9.eyJ0eXBlIjoidnRoX2Nmd19idzEwIiwiY3JlYXRlZF9hdCI6MTYyOTcyOTI0OSwiY3JlYXRlZF9ieV9pZCI6MjIsInRyaWFsIjpmYWxzZSwicmVwb3J0aW5nIjp0cnVlLCJ0cnVzdGVkIjpmYWxzZSwib3JnYW5pemF0aW9uIjoyMCwiYmlsbGluZ19zZXJpYWwiOiJ2VGgxMGE3MTkxNzYwMDAwIiwiYWN0aXZhdGlvbl91dWlkIjoiQTQwMjQxNDIzMDdCOUY0QTY4MjRDNzdBQ0YzRDk5REEyOTMyRkMyRCIsImV4cGlyZXNfYXQiOjE2NDA5OTUyMDAsInByb2R1Y3RfZGVzY3JpcHRpb24iOiJNQ0M6MzAyIE1OQzo3NjAiLCJlbnRpdGxlbWVudHMiOnsiY3JlYXRlZF9hdCI6MTYyOTcyOTI0OSwidHJ1c3RlZCI6eyJlbmFibGVkIjpmYWxzZX0sInRyaWFsIjp7ImVuYWJsZWQiOmZhbHNlfSwiZXhwaXJlc19hdCI6MTY0MDk5NTIwMCwicHJvZHVjdCI6IkNGVyIsIkFBTSI6dHJ1ZSwiQ0dOIjp0cnVlLCJEQUYiOnRydWUsIkRDRlciOnRydWUsIkdJRlciOnRydWUsIklQU0VDIjp0cnVlLCJTTEIiOnRydWUsIlNTTEkiOnRydWUsIkZQIjp0cnVlLCJVUkxGIjp0cnVlLCJXQUYiOnRydWUsIlJDIjp0cnVlLCJHU0xCIjp0cnVlLCJ2dGh1bmRlcl9wZXJwZXR1YWwiOnsiYmFuZHdpZHRoIjoxMDAwMCwiY3JlYXRlZF9hdCI6MTYyOTcyOTI0OSwiZXhwaXJlc19hdCI6MTY0MDk5NTIwMH19LCJjdXN0b21lcl9jb250YWN0Ijp7Im5hbWUiOiIiLCJlbWFpbCI6ImtkdW5hZXZAYTEwbmV0d29ya3MuY29tIn0sImN1cnJlbnRfdGltZSI6MTYyOTkyNzU4Mn0.WpUsJp9OAk0Nw8LPX3UNc7c5VjUlrLoBMCzdch9H8Txj5nIe2gUX2SJ0l2_XZdrE3rjqp4AfBax89dfzAsoRSOs6Xh3IBsITqeYXn71BTUCe6tg1tfmM6pusTWwXZYqlrNNZ_evkvaHjFAKY0cXa0MkbGYYx0TDTyxlCPzrBasivDRXRg_pi-Z9Ja6PMusz_mhAn-7Ef5dh7TDrchevSmLoYbwOtsDitgy42rsia0Qmlg-eqJw7OQdoXY8ms_yelKGSVmXnp-PklJttQHXzMik8VARnlBo1CCjrzdsEI15ffDJAHVyKpDEVprN74zw7CCBT7VuK5GvQX-1SPFho44zdgyAPzqLtsw-XL9OZovJCc1rUf_3ec8Dk0zNBC5INMUK6FNRcJhbs9e6G3ApEuXCDt9F883HC_Uqp8JvDWEwsJ1cY-rA-ygzYMsw3e6yLy0a1Ep_xJLmiiXjKzd3-rSkH1KA5NWh_HL5l-Ia4cLBUGtA2MmFtRJDg7lUe-bVZINsz-QBfoweFA79iEdVDtmzJE3AxlZf4DzmaXrlOrhckHzU1OlOx_7HuACYMp3M63Rff88CbtXNIA_GAfErnjo0WYiLWre0CiR8mihEGC2kxFsjtJyCBYBmj78dD2_onztklhHDTmHxZyW_qggID0qYvw5HEjj-XCzdvG3QPzS-w
+      vendor: a5f3-9c22-25da-fdb3
+    resources:
+      limits:
+        cpu: 2
+        hugepages-1Gi: 4Gi
+        memory: 8Gi
+      requests:
+        cpu: 2
+        hugepages-1Gi: 4Gi
+        memory: 8Gi
+    vhostuserPorts:
+      queues: 1
+  cm_source_env: false
+  deployment:
+    pinThreads: true
+  enabled: true
+  global:
+    serviceNames:
+      cm:
+        mediator: ""
+  logLevel: debug
+  messageBus:
+    msgSizeConfig: "6291456"
+  metadata:
+    podAnnotations:
+      k8s.v1.cni.cncf.io/networks: 5gsatoruonvpiot02pcghighthroughputens2f0, 5gsatoruonvpiot02pcghighthroughputens2f1
+  productVersionConfigMap:
+    name: eric-pc-gateway-version
+  replicaCount: 2
+  resources:
+    dataPlane:
+      limits:
+        cpu: "12"
+        hugepages-1Gi: 4Gi
+        memory: 12Gi
+        openshift.io/5gsatoruonvpiot02pcghighthroughputens2f0: "1"
+        openshift.io/5gsatoruonvpiot02pcghighthroughputens2f1: "1"
+      requests:
+        cpu: "12"
+        hugepages-1Gi: 4Gi
+        memory: 12Gi
+        openshift.io/5gsatoruonvpiot02pcghighthroughputens2f0: "1"
+        openshift.io/5gsatoruonvpiot02pcghighthroughputens2f1: "1"
+  sidecar:
+    at: true
+  tolerations:
+  - effect: NoSchedule
+    key: sriov
+    operator: Equal
+    value: "true"
+eric-pc-up-partitioner:
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  objectStorage:
+    accessSecretName: eric-pc-gateway-obj-storage-secret
+    enabled: true
+eric-pc-up-pfcp-endpoint:
+  cm_source_env: false
+  enabled: true
+  global:
+    serviceNames:
+      cm:
+        mediator: ""
+  messageBus:
+    msgSizeConfig: "6291456"
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  objectStorage:
+    accessSecretName: eric-pc-gateway-obj-storage-secret
+  productVersionConfigMap:
+    name: eric-pc-gateway-version
+eric-pc-up-service-chaining-cm-agent:
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  objectStorage:
+    accessSecretName: eric-pc-gateway-obj-storage-secret
+    enabled: true
+eric-pc-up-timer-wheel:
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  objectStorage:
+    accessSecretName: eric-pc-gateway-obj-storage-secret
+    enabled: true
+eric-pc-up-user-plane-cm-agent:
+  at_enabled: true
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  objectStorage:
+    accessSecretName: eric-pc-gateway-obj-storage-secret
+    enabled: true
+eric-pm-bulk-reporter:
+  enabled: true
+  env:
+    iscompressed: "true"
+  objectStorage:
+    enabled: false
+    secretName: eric-pc-gateway-obj-storage-secret
+  security:
+    tls:
+      objectStorage:
+        enabled: false
+        serviceName: eric-data-object-storage-mn
+  service:
+    annotations:
+      sharedVIPLabel: pcg-oam
+    loadBalancerIP: 172.21.90.228
+  thresholdReporter:
+    enabled: true
+  tolerations:
+    eric-pm-bulk-reporter:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 60
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 0
+  userConfig:
+    ldap:
+      enabled: true
+      rolesConfig:
+        readOnlyGroup: system-read-only
+        readWriteGroup: system-admin,system-trace-admin
+eric-pm-resource-monitor:
+  enabled: true
+  metricConfig:
+    configmapName: eric-pc-gateway-pmrm-metric-config
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  objectStorage:
+    accessSecretName: eric-pc-gateway-obj-storage-secret
+eric-pm-server:
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  rbac:
+    appMonitoring:
+      configFileCreate: false
+      enabled: true
+  resources:
+    eric-pm-server:
+      limits:
+        ephemeral-storage: 20Gi
+        memory: 4Gi
+      requests:
+        memory: 3200Mi
+  server:
+    configMapOverrideName: eric-pc-gateway-pm-server
+    persistentVolume:
+      enabled: false
+    retention: 3d
+  service:
+    endpoints:
+      reverseproxy:
+        tls:
+          enforced: optional
+          verifyClientCertificate: optional
+      scrapeTargets:
+        tls:
+          enforced: optional
+eric-probe-event-report-broker:
+  ebm:
+    enabled: false
+  enabled: true
+  env:
+    deploymentType: pcg
+    reporterPort: 8080
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  replicaCount: 2
+  resources:
+    probeEventReportBroker:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 256Mi
+eric-sec-admin-user-management:
+  day0AdminUser:
+    admin:
+      secret: eric-pc-gateway-ldap-server-secret
+  enabled: true
+  notices:
+    legal: IF YOU ARE NOT AN AUTHORIZED USER, PLEASE EXIT IMMEDIATELY
+    postLogin: ""
+    privacy: |
+      This system processes sensitive personal data. The misuse of such data may
+      generate considerable harm to the data subjects. Be reminded of the
+      confidentiality obligations you have when accessing this kind of data and
+      the disciplinary consequences of improper handling.
+
+      Version: 1.1, Last Updated: 2020-11-10
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 60
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 0
+eric-sec-certm:
+  enabled: true
+  tolerations:
+    eric-sec-certm:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 60
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 0
+eric-sec-key-management:
+  enabled: true
+  replicas: 2
+  resources:
+    shelter:
+      requests:
+        cpu: 200m
+    vault:
+      requests:
+        cpu: 200m
+  shelter:
+    enabled: true
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 60
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 0
+eric-sec-ldap-server:
+  additionalEnv:
+  - name: LDAP_LOG_LEVEL
+    value: "256"
+  adminCredentials:
+    adminpasswd: $6$K8AntXwLWSO3gEK/$1WomZCevp8e3V6PHFqsQGUYzmaoXQEQX9VUcrintKTI5krKnag5gELH6eBh3irCxHfkBw07JyA5CAuiH7sruk0
+    adminuser: pcgadmin
+  brAgent:
+    backupTypeList:
+    - DEFAULT
+    enabled: true
+  enabled: true
+  ldap:
+    aum:
+      enabled: true
+  metrics:
+    enabled: false
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  persistence:
+    size: 256Mi
+  replicaCount: 2
+  tolerations:
+    ldapproxy:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 60
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 0
+eric-sec-sip-tls:
+  enabled: true
+  keyManagement:
+    port: 8210
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 60
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 0
+eric-sw-inventory-manager:
+  enabled: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+global:
+  applicationId: TORU-IOTUPF-02
+  ericsson:
+    licensing:
+      licenseDomains:
+      - customerId: "945447"
+        productType: PACKET_CORE_GATEWAY
+        swltId: IOT-ARCH-LAB-PCG
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  pcfw:
+    enabled: true
+  pullSecret: toru-iotupf-02-1
+  registry:
+    pullSecret: toru-iotupf-02-1
+    url: docker-registry.evnfm-archlab.srbh.tlabs.ca
+  timezone: UTC
+helmNoHooks: false
+imageCredentials:
+  pullSecret: toru-iotupf-02-1
+  registry:
+    pullSecret: toru-iotupf-02-1
+    url: docker-registry.evnfm-archlab.srbh.tlabs.ca
+labels: {}
+m2m: {}
+manoControlledScaling: false
+productInfoStatus: enabled
+snmp-alarm-provider-secret-creation:
+  enabled: true

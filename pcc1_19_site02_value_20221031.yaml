@@ -1,0 +1,832 @@
+eric-cm-yang-provider:
+  cliExtensionCmds:
+    showAlarms:
+      enabled: true
+      host: eric-fh-alarm-handler:5006
+    showAlarmsHistory:
+      alarmLogPlane: adp-app-alarm-log
+      enabled: true
+      host: eric-data-search-engine:9200
+      httpsHost: eric-data-search-engine-tls:9200
+  global:
+    applicationId: TORU-IOTSMF-02
+  service:
+    annotations:
+      sharedVIPLabel: pcc-oam
+    loadBalancerIP: 172.21.90.225
+eric-cnom-server:
+  service:
+    loadBalancerIP: 172.21.90.227
+    type: LoadBalancer
+eric-data-search-engine:
+  imageCredentials:
+    pullPolicy: IfNotPresent
+  jvmHeap:
+    ingest: 1024m
+  log:
+    outputs:
+    - stdout
+    - stream
+  persistence:
+    data:
+      persistentVolumeClaim:
+        size: 100Gi
+  replicaCount:
+    data: 2
+    ingest: 2
+  resources:
+    data:
+      limits:
+        cpu: 750m
+      requests:
+        cpu: 750m
+    ingest:
+      limits:
+        memory: 2Gi
+      requests:
+        memory: 2Gi
+  service:
+    endpoints:
+      rest:
+        tls:
+          enforced: optional
+          verifyClientCertificate: optional
+eric-data-search-engine-curator:
+  actions: |
+    1:
+      action: delete_indices
+      description: >-
+        Delete indices older than 7 days (based on index name), for pc-sm, pc-mm
+        and pc-routing-app prefixed indices. Ignore the error if the filter does not result in an
+        actionable list of indices (ignore_empty_list) and exit cleanly.
+      options:
+        ignore_empty_list: True
+        timeout_override:
+        continue_if_exception: False
+        disable_action: False
+      filters:
+      - filtertype: pattern
+        kind: regex
+        value: '^(pc-mm-.*|pc-sm-app|pc-routing-app)-log-.*$'
+      - filtertype: pattern
+        kind: regex
+        value: '^(pc-mm-.*|pc-sm-app|pc-routing-app|vpn-gw-app)-log-.*$'
+        value: '^pc-mm-(worker-report|list-subscriber-result|gf-imeicheck|n17-pei-check)-log.*$'
+        exclude: True
+      - filtertype: age
+        source: name
+        direction: older
+        timestring: '%Y.%m.%d'
+        unit: days
+        unit_count: 7
+    2:
+      action: delete_indices
+      description: >-
+        Delete indices older than 1000 days (based on index name), for isp log
+        prefixed indices. Ignore the error if the filter does not result in
+        an actionable list of indices (ignore_empty_list) and exit cleanly.
+      options:
+        ignore_empty_list: True
+        timeout_override:
+        continue_if_exception: False
+        disable_action: False
+      filters:
+      - filtertype: pattern
+        kind: regex
+        value: '^(pcc-isp-log).*$'
+      - filtertype: age
+        source: name
+        direction: older
+        timestring: '%Y.%m.%d'
+        unit: days
+        unit_count: 1000
+    3:
+      action: delete_indices
+      description: >-
+        Delete indices older than 24 hours (based on index name), for indices
+        that might contain sensitive information.
+        Ignore the error if the filter does not result in an actionable list
+        of indices(ignore_empty_list) and exit cleanly.
+      options:
+        ignore_empty_list: True
+        timeout_override:
+        continue_if_exception: False
+        disable_action: False
+      filters:
+      - filtertype: pattern
+        kind: regex
+        value: '^pc-mm-(worker-report|list-subscriber-result|gf-imeicheck|n17-pei-check)-log.*$'
+      - filtertype: age
+        source: name
+        direction: older
+        timestring: '%Y.%m.%d'
+        unit: days
+        unit_count: 1
+    4:
+      action: delete_indices
+      description: >-
+        Delete indices older than 30 days (based on index name), for audit log
+        and alarm log prefixed indices. Ignore the error if the filter does
+        not result in an actionable list of indices (ignore_empty_list) and exit cleanly.
+      options:
+        ignore_empty_list: True
+        timeout_override:
+        continue_if_exception: False
+        disable_action: False
+      filters:
+      - filtertype: pattern
+        kind: regex
+        value: '^(adp-app-audit-logs|adp-app-alarm-log).*$'
+      - filtertype: age
+        source: name
+        direction: older
+        timestring: '%Y.%m.%d'
+        unit: days
+        unit_count: 30
+    5:
+      action: delete_indices
+      description: >-
+        Delete indices older than 7 days (based on index name), for common service.
+        Ignore the error if the filter does not result in an actionable list of
+        indices (ignore_empty_list) and exit cleanly.
+      options:
+        ignore_empty_list: True
+        timeout_override:
+        continue_if_exception: False
+        disable_action: False
+      filters:
+      - filtertype: pattern
+        kind: regex
+        value: '^(adp-app-logs|cnom-app-log|pcc-kvdbrd-app-log).*$'
+      - filtertype: age
+        source: name
+        direction: older
+        timestring: '%Y.%m.%d'
+        unit: days
+        unit_count: 7
+    6:
+      action: delete_indices
+      description: >-
+        Delete older indices when the total space is greater than upper limit, for pc-mm and
+        and vpn gw app log prefixed indices. Ignore the error if the filter does not result
+        in an actionable list of indices (ignore_empty_list) and exit cleanly.
+        pc-sm prefixed indices. Ignore the error if the filter does not result in an
+        actionable list of indices (ignore_empty_list) and exit cleanly.
+      options:
+        ignore_empty_list: True
+        timeout_override:
+        continue_if_exception: False
+        disable_action: False
+      filters:
+      - filtertype: pattern
+        kind: regex
+        value: '^(pc-mm-.*|pc-sm-app)-log.*$'
+      - filtertype: space
+        disk_space: 5
+        use_age: true
+        source: creation_date
+    7:
+      action: delete_indices
+      description: >-
+        Delete older indices when the total space is greater than upper limit, for
+        pc-routing-app-log prefixed indices. Ignore the error if the filter does not result in an
+        actionable list of indices (ignore_empty_list) and exit cleanly.
+      options:
+        ignore_empty_list: True
+        timeout_override:
+        continue_if_exception: False
+        disable_action: False
+      filters:
+      - filtertype: pattern
+        kind: regex
+        value: '^(pc-routing-app-log).*$'
+      - filtertype: space
+        disk_space: 2
+        use_age: true
+        source: creation_date
+    8:
+      action: delete_indices
+      description: >-
+        Delete older indices when the total space is greater than upper limit, for isp log
+        prefixed indices. Ignore the error if the filter does not result in an
+        actionable list of indices (ignore_empty_list) and exit cleanly.
+      options:
+        ignore_empty_list: True
+        timeout_override:
+        continue_if_exception: False
+        disable_action: False
+      filters:
+      - filtertype: pattern
+        kind: regex
+        value: '^(pcc-isp-log|vpn-gw-app-log).*$'
+      - filtertype: space
+        disk_space: 1
+        use_age: true
+        source: creation_date
+    9:
+      action: delete_indices
+      description: >-
+        Delete older indices when the total space is greater than upper limit, for audit log
+        and alarm log prefixed indices. Ignore the error if the filter does not result in an
+        actionable list of indices (ignore_empty_list) and exit cleanly.
+      options:
+        ignore_empty_list: True
+        timeout_override:
+        continue_if_exception: False
+        disable_action: False
+      filters:
+      - filtertype: pattern
+        kind: regex
+        value: '^(adp-app-audit-logs|adp-app-alarm-log).*$'
+      - filtertype: space
+        disk_space: 1
+        use_age: true
+        source: creation_date
+    10:
+      action: delete_indices
+      description: >-
+        Delete older indices when the total space is greater than upper limit, for common service
+        prefixed indices. Ignore the error if the filter does not result in an
+        actionable list of indices (ignore_empty_list) and exit cleanly.
+      options:
+        ignore_empty_list: True
+        timeout_override:
+        continue_if_exception: False
+        disable_action: False
+      filters:
+      - filtertype: pattern
+        kind: regex
+        value: '^(adp-app-logs|cnom-app-log|pcc-kvdbrd-app-log).*$'
+      - filtertype: space
+        disk_space: 15
+        use_age: true
+        source: creation_date
+  log:
+    outputs:
+    - stdout
+    - stream
+eric-data-sftp-server:
+  imageCredentials:
+    registry:
+      url: ""
+  service:
+    annotations:
+      sharedVIPLabel: pcc-oam
+    loadBalancerIP: 172.21.90.225
+eric-fh-snmp-alarm-provider:
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  service:
+    annotations:
+      sharedVIPLabel: pcc-oam
+    loadBalancerIP: 172.21.90.225
+eric-lm-combined-server:
+  licenseServerClient:
+    licenseServer:
+      thrift:
+        host: 172.21.223.124
+        port: 9095
+eric-log-shipper:
+  additionalVolumeMounts: |
+    - name: docker-containers
+      mountPath: /var/lib/docker/containers
+    - name: pcc-pods
+      mountPath: /var/log/pods
+    - name: pcc-containers
+      mountPath: /var/log/containers
+  additionalVolumes: |
+    - name: docker-containers
+      hostPath:
+        path: /var/lib/docker/containers
+    - name: pcc-pods
+      hostPath:
+        path: /var/log/pods
+    - name: pcc-containers
+      hostPath:
+        path: /var/log/containers
+  logshipper:
+    cfgData: |
+      paths:
+        - /var/log/containers/eric-pc-sm-*.log
+      tags: ["docker", "json-in-log"]
+      fields:
+        logplane: pc-sm-app-log
+      symlinks: true
+      json.add_error_key: true
+
+      paths:
+        - /var/log/containers/eric-pc-routing-*.log
+        - /var/log/containers/eric-pc-networking-cm-agent-*.log
+      tags: ["docker", "json-in-log"]
+      fields:
+        logplane: pc-routing-app-log
+      symlinks: true
+      json.add_error_key: true
+
+      paths:
+        - /var/log/containers/eric-cnom-server-*.log
+      tags: ["docker", "json-in-log"]
+      fields:
+        logplane: cnom-app-log
+      symlinks: true
+      json.add_error_key: true
+
+      paths:
+        # Note that these are not regexps but Go globs. In particular,
+        # [0-9]* means "a digit followed by a sequence of characters".
+        - /var/log/containers/eric-pc-mm-controller-[0-9]*.log
+        - /var/log/containers/eric-pc-mm-forwarder-[0-9]*.log
+        - /var/log/containers/eric-pc-mm-mobility-[0-9]*.log
+        - /var/log/containers/eric-pc-mm-sctp-[0-9]*.log
+      tags: ["docker", "json-in-log"]
+      symlinks: true
+      json.add_error_key: true
+      json.overwrite_keys: true
+
+      # These containers/microservices do not follow the ADP Design rules
+      # to log directly as JSON.
+      paths:
+        - /var/log/containers/eric-pc-mm-*.log
+      exclude_files:
+        - 'eric-pc-mm-(controller|forwarder|mobility|sctp)-[0-9]+_.*\.log'
+      tags: ["docker"]
+      fields:
+        logplane: pc-mm-app-log
+      symlinks: true
+      json.add_error_key: true
+      json.overwrite_keys: true
+
+      paths:
+        - /var/log/containers/eric-pc-kvdb-rd-*.log
+      exclude_files:
+        - 'eric-pc-kvdb-rd-*_eric-pc-kvdb-rd-logcar-*.log'
+      tags: ["docker"]
+      fields:
+        logplane: pcc-kvdbrd-app-log
+      symlinks: true
+      json.add_error_key: true
+      json.overwrite_keys: true
+
+      paths:
+        - /var/log/containers/eric-pc-kvdb-rd-*_eric-pc-kvdb-rd-logcar-*.log
+      tags: ["docker", "json-in-log"]
+      fields:
+        logplane: pcc-kvdbrd-app-log
+      symlinks: true
+      json.add_error_key: true
+
+      paths:
+        - /var/log/containers/eric-cnom-*.log
+      exclude_files:
+        - 'eric-cnom-server'
+      tags: ["docker"]
+      fields:
+        logplane: cnom-app-log
+      symlinks: true
+      json.add_error_key: true
+      json.overwrite_keys: true
+
+      paths:
+        - /var/log/containers/eric-pc-vpn-gw-*.log
+      tags: ["docker", "json-in-log", "vpn-gw"]
+      fields:
+        logplane: vpn-gw-app-log
+      symlinks: true
+      json.add_error_key: true
+
+      # Set alarm handler logs with tag "json-in-log"
+      # in order to parse json content and separate alarm
+      # history logs on logstash. And keep other logs on
+      # adp-app-logs log plane.
+      paths:
+        - /var/log/containers/eric-fh-alarm-handler-*.log
+      tags: ["docker", "json-in-log"]
+      fields:
+        logplane: adp-app-logs
+      symlinks: true
+      json.add_error_key: true
+
+      paths:
+        - /var/log/containers/*.log
+      exclude_files:
+        - 'eric-pc-mm-.*\.log'
+        - 'eric-pc-sm-.*\.log'
+        - 'eric-pc-kvdb-rd-.*\.log'
+        - 'eric-pc-routing-.*\.log'
+        - 'eric-pc-networking-cm-agent-.*\.log'
+        - 'eric-cnom-.*\.log'
+        - 'eric-tm-.*\.log'
+        - 'calico-node-.*\.log'
+        - 'eric-fh-alarm-handler-.*\.log'
+        - 'eric-cm-yang-provider-.*yang-db-adapter-.*\.log'
+        - 'eric-fh-snmp-alarm-provider-.*eric-fh-snmp-alarm-provider-.*\.log'
+        - 'eric-sec-certm-.*\.log'
+        - 'eric-pc-vpn-gw-.*\.log'
+        - 'eric-data-document-database-pg-.*\.log'
+        - 'eric-data-document-database-pg-ah-.*\.log'
+        - 'eric-data-document-database-pg-lm-.*\.log'
+        - 'eric-data-coordinator-zk.*\.log'
+        - 'eric-pm-bulk-reporter.*\.log'
+        - 'eric-sec-key-management-.*\.log'
+        - 'eric-sec-admin-user-management.*\.log'
+        - 'eric-odca-diagnostic-data-collector.*\.log'
+        - 'eric-log-transformer.*\.log'
+        - 'eric-lm-combined-server.*\.log'
+        - 'eric-ctrl-bro.*\.log'
+        - 'eric-sec-sip-tls.*\.log'
+        - 'eric-data-distributed-coordinator-ed.*\.log'
+        - 'eric-data-message-bus-kf.*\.log'
+        - 'eric-data-search-engine-data.*\.log'
+        - 'eric-data-search-engine-master.*\.log'
+        - 'eric-data-search-engine-ingest.*\.log'
+      tags: ["docker"]
+      fields:
+        logplane: adp-app-logs
+      symlinks: true
+      json.add_error_key: true
+      json.overwrite_keys: true
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+eric-log-transformer:
+  config:
+    adpJson:
+      transformation:
+        enabled: false
+      validation:
+        enabled: false
+    filebeat:
+      input:
+        filter: |
+          # These log events are from daemonset log shipper.
+          if "daemonset" in [tags] {
+            grok {
+              match => {
+                "[log][file][path]" => "/var/log/containers/%{DATA:pod_name}_%{DATA:namespace}_%{GREEDYDATA:container_name}-%{DATA:container_id}.log"
+              }
+              remove_field => ["log"]
+            }
+
+            # json-in-log is in tags if message filed follow the ADP Design rules
+            # Handle them by parsing the content of the message field.
+            if "json-in-log" in [tags] {
+              json {
+                skip_on_invalid_json => true
+                source => "[message]"
+                remove_field => ["stream"]
+              }
+            }
+            # logs from pods that do not follow the ADP Design rules
+            # force conversion to fit the ADP design rules.
+            if [stream] {
+              mutate {
+                rename => {"[stream]" => "[severity]"}
+                add_field => {"[version]" => "0.3.0"}
+                copy => { "@timestamp" => "timestamp" }
+                add_tag => [ "forced_conversion" ]
+              }
+              if [severity] == "stderr" {
+                mutate {
+                  replace => {"[severity]" => "error"}
+                }
+              } else if [severity] == "stdout" {
+                mutate {
+                  replace => {"[severity]" => "info"}
+                }
+              }
+              if ![service_id]{
+                mutate {
+                  copy => {"[container_name]" => "[service_id]"}
+                }
+              }
+            }
+          }
+          # The log events with DR are from sidecar log shipper.
+          else if [json][message] and [json][severity] and [json][service_id] and [json][version] and [json][timestamp] {
+            ruby {
+              code => "
+                event.get('json').each {|k, v|
+                    event.set(k, v)
+                }
+                event.remove('json')
+              "
+            }
+          }
+          # Logs without json and DR. The fields need to be renamed or added to fit ADP DR.
+          else if ![json][service_id] {
+            # KVDB specific rules: copy container, pod and namespace names to appropriate
+            # fields to mimic output seen running without logshipper sidecar.
+            if [extra_data][container_name] and [filename] =~ "/logs/rd_" {
+              mutate {
+                copy => { "[extra_data][container_name]" => "[service_id]" }
+                add_field => { "pod_name" => "%{[kubernetes][pod][name]}" }
+                add_field => { "container_name" => "%{[extra_data][container_name]}" }
+                add_field => { "namespace" => "%{[kubernetes][namespace]}" }
+              }
+            } else {
+              mutate {
+                copy => { "[kubernetes][pod][name]" => "[service_id]" }
+              }
+            }
+            mutate {
+              copy => { "@timestamp" => "timestamp" }
+              add_field => { "severity" => "info" }
+              add_field => { "version" => "0.3.0" }
+              add_tag => [ "forced_conversion" ]
+            }
+          }
+          if [host]{
+            mutate {
+              remove_field => [ "host" ]
+            }
+          }
+  egress:
+    syslog:
+      enabled: false
+      inclusions:
+      - field: '[facility]'
+        value: log audit
+      - field: '[facility]'
+        value: security/authorization messages
+      remoteHosts:
+      - host: 172.18.198.84
+        port: 514
+      - host: 172.25.143.84
+        port: 514
+      tls:
+        enabled: false
+  enabled: true
+  replicaCount: 2
+  searchengine:
+    logplaneConfig:
+    - field: '[facility]'
+      newLogplane: adp-app-audit-logs
+      value: log audit
+    - field: '[metadata][category]'
+      newLogplane: pcc-isp-log
+      value: HA-in-service-performance
+    - field: '[extra_data][asi][log_plane]'
+      newLogplane: adp-app-alarm-log
+      value: alarm
+    - field: '[metadata][category]'
+      newLogplane: pcc-isp-log
+      value: in-service performance
+    - field: '[facility]'
+      newLogplane: adp-app-logs
+      value: security/authorization messages
+eric-odca-diagnostic-data-collector:
+  env:
+    sftpFileLocation: /files/torueiotsmf01
+    sftphost: 172.18.232.184:22
+  sftpCredentials:
+    password: EricssonDDC
+    username: ddcsftpuser
+eric-pc-controller-ldap-admin-creds:
+  adminCredentials:
+    adminpasswd: $6$rrnMGWFAJDccPV5u$rkob2iTV6B/wRxTcY3bEIDILd8fv/E51d7KzfL5kv.6g07Tur6T7t3EFhWxE5fnB2sYnSK0OzOzPz12WzCICz0
+    adminuser: admin
+eric-pc-mm:
+  eric-pc-mm-controller:
+    replicaCount: 0
+  eric-pc-mm-forwarder:
+    replicaCount: 0
+  eric-pc-mm-mobility:
+    replicaCount: 0
+  eric-pc-mm-sctp:
+    replicaCount: 0
+  global:
+    orchestratorProvisionedNAD: false
+eric-pc-routing-engine:
+  interfaces:
+    cniNetPrefix: net
+    macvlan:
+    - master: bond2
+    type: macvlan
+eric-pc-sm:
+  eric-pc-kvdb-rd-server:
+    replicaCount: 6
+    resources:
+      node:
+        limits:
+          cpu: "1"
+          memory: 4Gi
+        requests:
+          cpu: "1"
+          memory: 4Gi
+  eric-pc-sm-br-agent:
+    resources:
+      limits:
+        cpu: 100m
+        memory: 2Gi
+      requests:
+        cpu: 100m
+        memory: 2Gi
+  eric-pc-sm-controller:
+    controller:
+      testing:
+        ingress:
+          enabled: false
+        loadBalancerIP: 172.21.90.226
+    hostname: TORU-IOTSMF-02
+    resources:
+      controller:
+        limits:
+          cpu: "1"
+          memory: 8Gi
+        requests:
+          cpu: "1"
+          memory: 8Gi
+  eric-pc-sm-diameter:
+    diameter:
+      replicaCount: 2
+  eric-pc-sm-http-client:
+    httpclient:
+      replicaCount: 2
+    resources:
+      httpclient:
+        limits:
+          cpu: "1"
+          memory: 8Gi
+        requests:
+          cpu: "1"
+          memory: 8Gi
+  eric-pc-sm-ip-allocator:
+    ipAllocator:
+      replicaCount: 1
+    resources:
+      ipallocator:
+        limits:
+          cpu: "1"
+          memory: 12Gi
+        requests:
+          cpu: "1"
+          memory: 12Gi
+  eric-pc-sm-notification-forwarder:
+    notifForwarder:
+      ingress:
+        enabled: false
+      loadBalancerIP:
+        namfNotification: 172.21.51.194
+        nchfNotification: 172.21.51.198
+        nnrfNotification: 172.21.51.197
+        npcfNotification: 172.21.51.196
+        nudmNotification: 172.21.51.195
+      replicaCount: 2
+    resources:
+      notifforwarder:
+        limits:
+          cpu: "1"
+          memory: 8Gi
+        requests:
+          cpu: "1"
+          memory: 8Gi
+  eric-pc-sm-nsmf-forwarder:
+    nsmfForwarder:
+      ingress:
+        enabled: false
+      loadBalancerIP:
+        nsmf: 172.21.51.193
+      replicaCount: 2
+    resources:
+      smf:
+        limits:
+          cpu: "1"
+          memory: 8Gi
+        requests:
+          cpu: "1"
+          memory: 8Gi
+  eric-pc-sm-sgw-session:
+    resources:
+      sgw:
+        limits:
+          cpu: "4"
+          memory: 12Gi
+        requests:
+          cpu: "4"
+          memory: 12Gi
+    sgw:
+      replicaCount: 2
+  eric-pc-sm-smf-pgw-session:
+    resources:
+      smf:
+        limits:
+          cpu: "4"
+          memory: 32Gi
+        requests:
+          cpu: "4"
+          memory: 32Gi
+    smf:
+      replicaCount: 2
+  eric-pc-sm-udp-forwarder:
+    forwarder:
+      ingress:
+        enabled: false
+      loadBalancerIP: {}
+      replicaCount: 1
+    resources:
+      udpforwarder:
+        limits:
+          cpu: "1"
+          memory: 8Gi
+        requests:
+          cpu: "1"
+          memory: 8Gi
+eric-pc-storage:
+  persistentVolumeClaim:
+    size: 30Gi
+    storageClassName: ocs-storagecluster-cephfs
+eric-pc-vpn-gw:
+  eric-pc-vpn-gw:
+    allowNetworkConfigChanges: true
+    interfaces:
+    - hostInterface: bond2
+      name: net0
+      type: macvlan
+    kernelIo:
+      ipv6:
+        enabled: true
+    replicaCount: 4
+    resources:
+      dataPlane:
+        limits:
+          cpu: "2"
+          memory: 2Gi
+        requests:
+          cpu: "2"
+          memory: 2Gi
+    vpnGateway:
+      enabled: true
+      log:
+        payload: false
+        signaling: true
+eric-pm-bulk-reporter:
+  env:
+    nodeName: TORU-IOTSMF-01
+  objectStorage:
+    enabled: true
+  service:
+    annotations:
+      sharedVIPLabel: pcc-oam
+    loadBalancerIP: 172.21.90.225
+eric-pm-server:
+  rbac:
+    appMonitoring:
+      enabled: true
+    configFileCreate: false
+  server:
+    persistentVolume:
+      enabled: true
+eric-si-application-sys-info-handler:
+  asih:
+    applicationId: TORU-IOTSMF-02
+global:
+  applicationId: TORU-IOTSMF-02
+  epg-pm:
+    enabled: false
+  ericsson:
+    licensing:
+      licenseDomains:
+      - customerId: "945447"
+        productType: PACKET_CORE_CONTROLLER
+        swltId: IOT-ARCH-LAB-PCC
+  nodeSelector:
+    nodetype: 5gsa-toruonvp-iot02-pcc
+  pullSecret: toru-iotsmf-02-1
+  registry:
+    pullSecret: toru-iotsmf-02-1
+    url: docker-registry.evnfm-archlab.srbh.tlabs.ca
+  sm:
+    pgw:
+      enabled: true
+    sgw:
+      enabled: true
+    smf:
+      enabled: true
+helmNoHooks: false
+imageCredentials:
+  pullSecret: toru-iotsmf-02-1
+  registry:
+    pullSecret: toru-iotsmf-02-1
+    url: docker-registry.evnfm-archlab.srbh.tlabs.ca
+manoControlledScaling: false
+tags:
+  brm: true
+  cm: true
+  cnom: true
+  controller-supervisor: false
+  data-sftp-server: true
+  ddc: true
+  eric-pc-mm: false
+  fm: true
+  log: true
+  mm-gtp-forwarder: false
+  object-storage-mn: true
+  pm-bulk-reporter: true
+  pm-server: true
+  probe: false
+  rs: true
+  sip-tls: true
+  sm: true
+  storage: false
+  swim: true
+  um: true
+  vpn-gw: true
